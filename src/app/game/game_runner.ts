@@ -184,6 +184,7 @@ export class GameRunner {
       }));
     }
     this.game.remainingPlayers = this.remainingPlayers;
+    this.game.eliminationOrder.push(defeatedPlayer);
   }
 
   private getPlayerFogOfWar(player: proto.Player, grid: proto.Grid): proto.Grid {

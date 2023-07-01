@@ -1,7 +1,5 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
 
 export const protobufPackage = "";
 
@@ -113,6 +111,7 @@ export interface Game {
   gameLength: number;
   currentTick: number;
   grid: Grid | undefined;
+  eliminationOrder: Player[];
 }
 
 export interface Coordinates {
@@ -425,6 +424,7 @@ function createBaseGame(): Game {
     gameLength: 0,
     currentTick: 0,
     grid: undefined,
+    eliminationOrder: [],
   };
 }
 
@@ -458,6 +458,11 @@ export const Game = {
     if (message.grid !== undefined) {
       Grid.encode(message.grid, writer.uint32(66).fork()).ldelim();
     }
+    writer.uint32(74).fork();
+    for (const v of message.eliminationOrder) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     return writer;
   },
 
@@ -544,6 +549,23 @@ export const Game = {
 
           message.grid = Grid.decode(reader, reader.uint32());
           continue;
+        case 9:
+          if (tag === 72) {
+            message.eliminationOrder.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 74) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.eliminationOrder.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -565,6 +587,9 @@ export const Game = {
       gameLength: isSet(object.gameLength) ? Number(object.gameLength) : 0,
       currentTick: isSet(object.currentTick) ? Number(object.currentTick) : 0,
       grid: isSet(object.grid) ? Grid.fromJSON(object.grid) : undefined,
+      eliminationOrder: Array.isArray(object?.eliminationOrder)
+        ? object.eliminationOrder.map((e: any) => playerFromJSON(e))
+        : [],
     };
   },
 
@@ -586,6 +611,11 @@ export const Game = {
     message.gameLength !== undefined && (obj.gameLength = Math.round(message.gameLength));
     message.currentTick !== undefined && (obj.currentTick = Math.round(message.currentTick));
     message.grid !== undefined && (obj.grid = message.grid ? Grid.toJSON(message.grid) : undefined);
+    if (message.eliminationOrder) {
+      obj.eliminationOrder = message.eliminationOrder.map((e) => playerToJSON(e));
+    } else {
+      obj.eliminationOrder = [];
+    }
     return obj;
   },
 
@@ -603,6 +633,7 @@ export const Game = {
     message.gameLength = object.gameLength ?? 0;
     message.currentTick = object.currentTick ?? 0;
     message.grid = (object.grid !== undefined && object.grid !== null) ? Grid.fromPartial(object.grid) : undefined;
+    message.eliminationOrder = object.eliminationOrder?.map((e) => e) || [];
     return message;
   },
 };
@@ -1453,33 +1484,6 @@ export const GameConfig_PlayerConfig = {
     return message;
   },
 };
-
-export interface StrategyService {
-  Play(request: Observable<GameRequest>): Observable<GameResponse>;
-}
-
-export const StrategyServiceServiceName = "StrategyService";
-export class StrategyServiceClientImpl implements StrategyService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || StrategyServiceServiceName;
-    this.rpc = rpc;
-    this.Play = this.Play.bind(this);
-  }
-  Play(request: Observable<GameRequest>): Observable<GameResponse> {
-    const data = request.pipe(map((request) => GameRequest.encode(request).finish()));
-    const result = this.rpc.bidirectionalStreamingRequest(this.service, "Play", data);
-    return result.pipe(map((data) => GameResponse.decode(_m0.Reader.create(data))));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
-  clientStreamingRequest(service: string, method: string, data: Observable<Uint8Array>): Promise<Uint8Array>;
-  serverStreamingRequest(service: string, method: string, data: Uint8Array): Observable<Uint8Array>;
-  bidirectionalStreamingRequest(service: string, method: string, data: Observable<Uint8Array>): Observable<Uint8Array>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -52,6 +52,7 @@ class SampleStrategy implements Strategy {
     this.game.remainingPlayers = this.game.remainingPlayers.filter(
       (player) => player != playerUpdate.playerDefeated
     );
+    this.game.eliminationOrder.push(playerUpdate.playerDefeated);
   }
 
   performAction(): proto.Move | null {

@@ -1,12 +1,11 @@
 import { Component, Input } from '@angular/core';
 import * as proto from '../game';
-import { BG_COLORS, FG_COLORS } from '../constants';
+import { BG_COLORS } from '../constants';
 import { Strategy } from '../strategy/strategy';
 import { BotConfig } from '../types';
 import { GameRunner } from '../game/game_runner';
 import { MessageService } from '../message.service';
 import { timer } from 'rxjs';
-
 @Component({
   selector: 'app-game-manager',
   templateUrl: './game-manager.component.html',
@@ -17,15 +16,17 @@ export class GameManagerComponent {
 
   bots: Map<proto.Player, Strategy> = new Map;
   game: proto.Game | null = null;
-  isActivePlayer: boolean[] = [false, false, false, false, false, false, false, false];
+  isValidPlayer: boolean[] = [false, false, false, false, false, false, false, false];
   currentSoldiers: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
   botConfigs: Map<proto.Player, BotConfig> = new Map;
 
   isPlaying: boolean = false;
   gameRunner: GameRunner | null = null;
   locked: boolean = false;
-  speed: number = 20;
+  speed: number = 5;
   lastAutoPlay: number = Date.now();
+
+  readonly BG_COLORS = BG_COLORS;
 
   constructor(private message: MessageService) {
     const timerSource = timer(0, 1);
@@ -48,7 +49,7 @@ export class GameManagerComponent {
     this.bots = await this.getBots(this.botConfigs);
     this.game = this.convertToMap(this.gameConfig);
     for (let i = 0; i < 8; ++i) {
-      this.isActivePlayer[i] = this.botConfigs.has(proto.playerFromJSON(i + 1));
+      this.isValidPlayer[i] = this.botConfigs.has(proto.playerFromJSON(i + 1));
     }
     this.gameRunner = new GameRunner(this.game, this.bots);
   }
@@ -63,7 +64,8 @@ export class GameManagerComponent {
         return [player, strategy] as [proto.Player, Strategy];
       } catch (e) {
         console.log(e);
-        throw "Error creating bot for player " + proto.playerFromJSON(player);
+        this.message.addMessage("Error creating bot for player " + proto.playerFromJSON(player));
+        throw e;
       }
     }));
     return new Map<proto.Player, Strategy>(bots);
@@ -109,6 +111,9 @@ export class GameManagerComponent {
     } while (true);
   }
   gameStep() {
+    if (!this.gameRunner) {
+      return;
+    }
     if (!this.gameConfig) {
       return;
     }
@@ -116,7 +121,7 @@ export class GameManagerComponent {
       return;
     }
     this.locked = true;
-    const ret = this.gameRunner?.step();
+    const ret = this.gameRunner.step();
     this.currentSoldiers = [0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < this.gameConfig.gameMap!.height; ++i) {
       for (let j = 0; j < this.gameConfig.gameMap!.width; ++j) {
@@ -126,6 +131,9 @@ export class GameManagerComponent {
         }
       }
     }
+    this.game!.eliminationOrder.forEach((player, index) => {
+      this.currentSoldiers[player - 1] = -this.gameConfig!.players.length + index;
+    });
     this.locked = false;
     return ret;
   }

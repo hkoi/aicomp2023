@@ -41,6 +41,7 @@ message Game {
   int32 game_length = 6;
   int32 current_tick = 7;
   Grid grid = 8;
+  repeated Player elimination_order = 9;
 }
 message Coordinates {
   int32 x = 1;

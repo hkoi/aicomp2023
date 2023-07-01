@@ -21,8 +21,6 @@ class NullStrategy implements Strategy {
 
   tick(tickNumber: number) {
     this.game.currentTick = tickNumber;
-    if (tickNumber == this.game.gameLength) {
-    }
   }
 
   handleGridUpdate(gridUpdate: proto.GridUpdate): void {
@@ -37,6 +35,7 @@ class NullStrategy implements Strategy {
     this.game.remainingPlayers = this.game.remainingPlayers.filter(
       (player) => player != playerUpdate.playerDefeated
     );
+    this.game.eliminationOrder.push(playerUpdate.playerDefeated);
   }
 
   performAction(): proto.Move | null {
