@@ -52,6 +52,7 @@ export class GameManagerComponent {
       this.isValidPlayer[i] = this.botConfigs.has(proto.playerFromJSON(i + 1));
     }
     this.gameRunner = new GameRunner(this.game, this.bots);
+    this.updateStatistics();
   }
 
   async getBots(botConfigs: Map<proto.Player, BotConfig>) {
@@ -122,18 +123,7 @@ export class GameManagerComponent {
     }
     this.locked = true;
     const ret = this.gameRunner.step();
-    this.currentSoldiers = [0, 0, 0, 0, 0, 0, 0, 0];
-    for (let i = 0; i < this.gameConfig.gameMap!.height; ++i) {
-      for (let j = 0; j < this.gameConfig.gameMap!.width; ++j) {
-        const cell = this.game!.grid!.rows[i].cells[j];
-        if (cell.player) {
-          this.currentSoldiers[cell.player - 1] += cell.numSoldiers;
-        }
-      }
-    }
-    this.game!.eliminationOrder.forEach((player, index) => {
-      this.currentSoldiers[player - 1] = -this.gameConfig!.players.length + index;
-    });
+    this.updateStatistics();
     this.locked = false;
     return ret;
   }
@@ -161,5 +151,20 @@ export class GameManagerComponent {
 
   gameDebug(player: proto.Player) {
     this.gameRunner?.debug(player);
+  }
+
+  private updateStatistics() {
+    this.currentSoldiers = [0, 0, 0, 0, 0, 0, 0, 0];
+    for (let i = 0; i < this.gameConfig!.gameMap!.height; ++i) {
+      for (let j = 0; j < this.gameConfig!.gameMap!.width; ++j) {
+        const cell = this.game!.grid!.rows[i].cells[j];
+        if (cell.player) {
+          this.currentSoldiers[cell.player - 1] += cell.numSoldiers;
+        }
+      }
+    }
+    this.game!.eliminationOrder.forEach((player, index) => {
+      this.currentSoldiers[player - 1] = -this.gameConfig!.players.length + index;
+    });
   }
 }

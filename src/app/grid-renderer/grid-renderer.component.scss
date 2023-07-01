@@ -1,9 +1,10 @@
 .grid {
-  width: 400px;
-  height: 400px;
+  width: 480px;
+  height: 480px;
   border-collapse: collapse;
   display: flex;
   flex-direction: column;
+  margin-bottom: 40px;
 
   .row {
     display: flex;
