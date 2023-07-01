@@ -23,9 +23,12 @@ export class GameManagerComponent {
 
   isPlaying: boolean = false;
   gameRunner: GameRunner | null = null;
+  locked: boolean = false;
+  speed: number = 20;
+  lastAutoPlay: number = Date.now();
 
   constructor(private message: MessageService) {
-    const timerSource = timer(0, 20);
+    const timerSource = timer(0, 1);
     timerSource.subscribe(() => {
       this.autoplay();
     });
@@ -109,6 +112,10 @@ export class GameManagerComponent {
     if (!this.gameConfig) {
       return;
     }
+    if (this.locked) {
+      return;
+    }
+    this.locked = true;
     const ret = this.gameRunner?.step();
     this.currentSoldiers = [0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < this.gameConfig.gameMap!.height; ++i) {
@@ -119,6 +126,7 @@ export class GameManagerComponent {
         }
       }
     }
+    this.locked = false;
     return ret;
   }
   gamePause() {
@@ -133,8 +141,13 @@ export class GameManagerComponent {
       return;
     }
     if (this.game.remainingPlayers.length == 1 || this.game.currentTick == this.gameConfig?.gameLength) {
+      this.isPlaying = false;
       return;
     }
+    if (this.lastAutoPlay > Date.now() - this.speed) {
+      return;
+    }
+    this.lastAutoPlay = Date.now();
     this.gameStep();
   }
 
