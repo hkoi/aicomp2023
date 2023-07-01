@@ -13,6 +13,8 @@ export class GameRunner {
   private hasBroadcastTick: boolean = false;
   private tickNumber: number = 0;
   private tickSequence: proto.Player[] = [];
+  private lastTimerPlayer: proto.Player = proto.Player.INVALID;
+  private lastTimerStart: number = 0;
 
   constructor(game: proto.Game, players: Map<proto.Player, Strategy>) {
     this.game = game;
@@ -48,8 +50,11 @@ export class GameRunner {
       // Announce
       for (const player of this.players) {
         try {
+          this.startTimer(player);
           this.playerStrategies.get(player)?.tick(this.tickNumber);
-        } catch (e) { }
+        } catch (e) { } finally {
+          this.endTimer();
+        }
       }
       // Shuffle
       for (let i = 0; i < 30; ++i) {
@@ -72,12 +77,13 @@ export class GameRunner {
       }
 
       try {
+        this.startTimer(nextPlayer);
         const move = this.playerStrategies.get(nextPlayer)?.performAction();
         if (move) {
           this.handleMove(nextPlayer, move);
         }
-      } catch (e) {
-
+      } catch (e) { } finally {
+        this.endTimer();
       }
       this.sendGridUpdates();
       return false;
@@ -108,9 +114,10 @@ export class GameRunner {
         assignedColor: player
       });
       try {
+        this.startTimer(player);
         this.playerStrategies.get(player)?.init(playerGame);
-      } catch (e) {
-
+      } catch (e) { } finally {
+        this.endTimer();
       }
     }
   }
@@ -179,9 +186,14 @@ export class GameRunner {
     }
     this.remainingPlayers = this.remainingPlayers.filter((player) => player != defeatedPlayer);
     for (const player of this.remainingPlayers) {
-      this.playerStrategies.get(player)?.handlePlayerUpdate(proto.PlayerUpdate.create({
-        playerDefeated: defeatedPlayer
-      }));
+      try {
+        this.startTimer(player);
+        this.playerStrategies.get(player)?.handlePlayerUpdate(proto.PlayerUpdate.create({
+          playerDefeated: defeatedPlayer
+        }));
+      } catch (e) { } finally {
+        this.endTimer();
+      }
     }
     this.game.remainingPlayers = this.remainingPlayers;
     this.game.eliminationOrder.push(defeatedPlayer);
@@ -230,9 +242,10 @@ export class GameRunner {
         }
       }
       try {
+        this.startTimer(player);
         this.playerStrategies.get(player)?.handleGridUpdate(proto.GridUpdate.create({ cellUpdates }));
-      } catch (e) {
-
+      } catch (e) { } finally {
+        this.endTimer();
       }
       this.playerViews.set(player, newFogOfWar);
     }
@@ -263,5 +276,20 @@ export class GameRunner {
       }
     }
     this.sendGridUpdates();
+  }
+
+  private startTimer(player: proto.Player) {
+    this.lastTimerPlayer = player;
+    this.lastTimerStart = Date.now();
+  }
+
+  private endTimer() {
+    const ms = Math.max(0, Date.now() - this.lastTimerStart);
+    for (const playerRemainingTime of this.game!.remainingTimeInfo) {
+      if (playerRemainingTime.player == this.lastTimerPlayer) {
+        playerRemainingTime.remainingTimeMs -= ms;
+      }
+    }
+    this.lastTimerPlayer = proto.Player.INVALID;
   }
 }

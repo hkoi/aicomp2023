@@ -6,6 +6,9 @@ import { BotConfig } from '../types';
 import { GameRunner } from '../game/game_runner';
 import { MessageService } from '../message.service';
 import { timer } from 'rxjs';
+
+const TIME_LIMIT = 20000;
+
 @Component({
   selector: 'app-game-manager',
   templateUrl: './game-manager.component.html',
@@ -19,6 +22,7 @@ export class GameManagerComponent {
   isValidPlayer: boolean[] = [false, false, false, false, false, false, false, false];
   currentSoldiers: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
   botConfigs: Map<proto.Player, BotConfig> = new Map;
+  remainingTimes: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
 
   isPlaying: boolean = false;
   gameRunner: GameRunner | null = null;
@@ -74,9 +78,13 @@ export class GameManagerComponent {
 
   private convertToMap(gameConfig: proto.GameConfig): proto.Game {
     const allPlayers = gameConfig.players.map((playerConfig) => playerConfig.player);
+    const timeLimits = gameConfig.players.map((playerConfig) => proto.PlayerRemainingTime.create({
+      player: playerConfig.player, remainingTimeMs: TIME_LIMIT
+    }));
     const game = proto.Game.create({
       validPlayers: allPlayers,
       remainingPlayers: allPlayers,
+      remainingTimeInfo: timeLimits,
       gameLength: gameConfig.gameLength,
       currentTick: 0,
       height: gameConfig.gameMap!.height,
@@ -165,6 +173,9 @@ export class GameManagerComponent {
     }
     this.game!.eliminationOrder.forEach((player, index) => {
       this.currentSoldiers[player - 1] = -this.gameConfig!.players.length + index;
+    });
+    this.game!.remainingTimeInfo.forEach(({ player, remainingTimeMs }) => {
+      this.remainingTimes[player - 1] = remainingTimeMs;
     });
   }
 }

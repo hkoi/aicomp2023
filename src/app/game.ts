@@ -112,6 +112,12 @@ export interface Game {
   currentTick: number;
   grid: Grid | undefined;
   eliminationOrder: Player[];
+  remainingTimeInfo: PlayerRemainingTime[];
+}
+
+export interface PlayerRemainingTime {
+  player: Player;
+  remainingTimeMs: number;
 }
 
 export interface Coordinates {
@@ -425,6 +431,7 @@ function createBaseGame(): Game {
     currentTick: 0,
     grid: undefined,
     eliminationOrder: [],
+    remainingTimeInfo: [],
   };
 }
 
@@ -463,6 +470,9 @@ export const Game = {
       writer.int32(v);
     }
     writer.ldelim();
+    for (const v of message.remainingTimeInfo) {
+      PlayerRemainingTime.encode(v!, writer.uint32(82).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -566,6 +576,13 @@ export const Game = {
           }
 
           break;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.remainingTimeInfo.push(PlayerRemainingTime.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -589,6 +606,9 @@ export const Game = {
       grid: isSet(object.grid) ? Grid.fromJSON(object.grid) : undefined,
       eliminationOrder: Array.isArray(object?.eliminationOrder)
         ? object.eliminationOrder.map((e: any) => playerFromJSON(e))
+        : [],
+      remainingTimeInfo: Array.isArray(object?.remainingTimeInfo)
+        ? object.remainingTimeInfo.map((e: any) => PlayerRemainingTime.fromJSON(e))
         : [],
     };
   },
@@ -616,6 +636,11 @@ export const Game = {
     } else {
       obj.eliminationOrder = [];
     }
+    if (message.remainingTimeInfo) {
+      obj.remainingTimeInfo = message.remainingTimeInfo.map((e) => e ? PlayerRemainingTime.toJSON(e) : undefined);
+    } else {
+      obj.remainingTimeInfo = [];
+    }
     return obj;
   },
 
@@ -634,6 +659,78 @@ export const Game = {
     message.currentTick = object.currentTick ?? 0;
     message.grid = (object.grid !== undefined && object.grid !== null) ? Grid.fromPartial(object.grid) : undefined;
     message.eliminationOrder = object.eliminationOrder?.map((e) => e) || [];
+    message.remainingTimeInfo = object.remainingTimeInfo?.map((e) => PlayerRemainingTime.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePlayerRemainingTime(): PlayerRemainingTime {
+  return { player: 0, remainingTimeMs: 0 };
+}
+
+export const PlayerRemainingTime = {
+  encode(message: PlayerRemainingTime, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.player !== 0) {
+      writer.uint32(8).int32(message.player);
+    }
+    if (message.remainingTimeMs !== 0) {
+      writer.uint32(16).int32(message.remainingTimeMs);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlayerRemainingTime {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlayerRemainingTime();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.player = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.remainingTimeMs = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlayerRemainingTime {
+    return {
+      player: isSet(object.player) ? playerFromJSON(object.player) : 0,
+      remainingTimeMs: isSet(object.remainingTimeMs) ? Number(object.remainingTimeMs) : 0,
+    };
+  },
+
+  toJSON(message: PlayerRemainingTime): unknown {
+    const obj: any = {};
+    message.player !== undefined && (obj.player = playerToJSON(message.player));
+    message.remainingTimeMs !== undefined && (obj.remainingTimeMs = Math.round(message.remainingTimeMs));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PlayerRemainingTime>, I>>(base?: I): PlayerRemainingTime {
+    return PlayerRemainingTime.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PlayerRemainingTime>, I>>(object: I): PlayerRemainingTime {
+    const message = createBasePlayerRemainingTime();
+    message.player = object.player ?? 0;
+    message.remainingTimeMs = object.remainingTimeMs ?? 0;
     return message;
   },
 };

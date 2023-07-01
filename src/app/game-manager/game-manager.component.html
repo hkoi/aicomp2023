@@ -6,7 +6,9 @@
       <div class="col-sm-1 text-center" *ngFor="let item of isValidPlayer; let i = index; trackBy: trackByIndex">
         <ng-container *ngIf="item">
           <span>{{ botConfigs.get(i + 1)!.description }}</span><br>
-          <button class="btn btn-info btn-sm" (click)="gameDebug(i + 1)">Debug</button>
+          <button class="btn btn-info btn-sm" (click)="gameDebug(i + 1)">
+            {{ game ? remainingTimes[i] : 'Debug' }}
+          </button>
         </ng-container>
       </div>
     </div>
